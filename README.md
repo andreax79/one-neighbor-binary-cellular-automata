@@ -15,11 +15,14 @@ Usage example
 -------------
 
 Generate a file representing the evolution of 256 cells with rule 6 for 300 steps 
-java -jar meca-1.0-jar-with-dependencies.jar --rule=6 --width=256 --steps=300
+
+```console
+$ cargo run --rule=6 --width=256 --steps=300
+```
 
 Example of the generated file:
 
-![](/output_example/rule6.jpeg "Output Example")
+![](/output_example/rule_6_w600_s600_random.png "Output Example")
 
 
 
