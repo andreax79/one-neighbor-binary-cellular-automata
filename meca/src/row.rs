@@ -1,10 +1,11 @@
 use crate::boundaries::Boundaries;
 use crate::cell::Cell;
 use crate::initial_state::InitialState;
+use crate::rng::generate_eq_clocked_times;
+use crate::rng::generate_random_order_indexes;
 use crate::rule::Rule;
-use crate::update_pattern::{
-    generate_eq_clocked_times, generate_random_order_indexes, UpdatePattern,
-};
+use crate::update_pattern::UpdatePattern;
+use rand_core::RngCore;
 use std::fmt;
 
 #[derive(Clone, PartialEq)]
@@ -24,24 +25,25 @@ impl Row {
         boundaries: Boundaries,
         update_pattern: UpdatePattern,
         initial_state: &InitialState,
+        rng: &mut dyn RngCore,
     ) -> Self {
         Row {
             boundaries,
             update_pattern,
             t: 0,
-            cells: initial_state.prepare_initial_state(size, rule, alpha),
+            cells: initial_state.prepare_initial_state(size, rule, alpha, rng),
             update_order: match update_pattern {
-                UpdatePattern::OasCyclic => Some(generate_random_order_indexes(size)),
-                UpdatePattern::OasEqClocked(t) => Some(generate_eq_clocked_times(size, t)),
+                UpdatePattern::OasCyclic => Some(generate_random_order_indexes(size, rng)),
+                UpdatePattern::OasEqClocked(t) => Some(generate_eq_clocked_times(size, t, rng)),
                 _ => None,
             },
         }
     }
 
     /// Update the row of cells
-    pub fn step(&self) -> Row {
+    pub fn step(&self, rng: &mut dyn RngCore) -> Row {
         Row {
-            cells: self.update_pattern.update(self),
+            cells: self.update_pattern.update(self, rng),
             t: self.t + 1,
             boundaries: self.boundaries,
             update_pattern: self.update_pattern,

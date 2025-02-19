@@ -1,6 +1,8 @@
 use crate::cell::Cell;
+use crate::rng::generate_random_order_indexes;
+use crate::rng::random_range;
 use crate::row::Row;
-use rand::prelude::*;
+use rand_core::RngCore;
 use std::fmt;
 use std::str::FromStr;
 
@@ -28,26 +30,14 @@ impl UpdatePattern {
     }
 }
 
-pub fn generate_random_order_indexes(size: usize) -> Vec<usize> {
-    let mut indexes: Vec<usize> = (0..size).collect();
-    let mut rng = rand::rng();
-    indexes.shuffle(&mut rng);
-    indexes
-}
-
-pub fn generate_eq_clocked_times(size: usize, eq_clocked_times: usize) -> Vec<usize> {
-    let mut rng = rand::rng();
-    (0..size)
-        .map(|_| rng.random_range(0..eq_clocked_times))
-        .collect()
-}
-
 impl UpdatePattern {
     /// Update the row of cells according to the update pattern
-    pub fn update(self, row: &Row) -> Vec<Cell> {
+    pub fn update(self, row: &Row, rng: &mut dyn RngCore) -> Vec<Cell> {
         match self {
-            UpdatePattern::RasRandomIndependent(n) => self.ras_random_independent_update(row, n),
-            UpdatePattern::RasRandomOrder => self.ras_random_order_update(row),
+            UpdatePattern::RasRandomIndependent(n) => {
+                self.ras_random_independent_update(row, n, rng)
+            }
+            UpdatePattern::RasRandomOrder => self.ras_random_order_update(row, rng),
             UpdatePattern::OasCyclic => self.oas_cyclic_update(row),
             UpdatePattern::OasEqClocked(eq_clocked_times) => {
                 self.oas_eq_clocked_update(row, eq_clocked_times)
@@ -57,13 +47,17 @@ impl UpdatePattern {
     }
 
     /// At each time step, n cells to update are chosen at random
-    fn ras_random_independent_update(&self, row: &Row, n: usize) -> Vec<Cell> {
+    fn ras_random_independent_update(
+        &self,
+        row: &Row,
+        n: usize,
+        rng: &mut dyn RngCore,
+    ) -> Vec<Cell> {
         let mut new_cells = row.cells.clone();
-        let mut rng = rand::rng();
 
         for _ in 0..n {
             // Generate a random index
-            let i = rng.random_range(0..row.cells.len());
+            let i = random_range(0..row.cells.len(), rng);
             new_cells[i] = row.cells[i].update(&new_cells, i, row.t, &row.boundaries);
         }
 
@@ -71,10 +65,10 @@ impl UpdatePattern {
     }
 
     /// At each time step, all nodes are updated, but in random order
-    fn ras_random_order_update(self, row: &Row) -> Vec<Cell> {
+    fn ras_random_order_update(self, row: &Row, rng: &mut dyn RngCore) -> Vec<Cell> {
         let mut new_cells = row.cells.clone();
 
-        for &i in generate_random_order_indexes(row.get_size()).iter() {
+        for &i in generate_random_order_indexes(row.get_size(), rng).iter() {
             new_cells[i] = row.cells[i].update(&new_cells, i, row.t, &row.boundaries);
         }
 

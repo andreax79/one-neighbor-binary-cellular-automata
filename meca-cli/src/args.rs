@@ -7,6 +7,7 @@ use meca::rule::Rule;
 use meca::update_pattern::UpdatePattern;
 use std::error::Error;
 use std::fmt;
+use std::time::SystemTime;
 
 pub struct Args {
     pub rule: Rule,
@@ -15,6 +16,7 @@ pub struct Args {
     pub boundaries: Boundaries,
     pub update_pattern: UpdatePattern,
     pub initial_state: InitialState,
+    pub seed: u64,
     pub steps: usize,
     pub output_type: OutputType,
     pub color_scheme: ColorScheme,
@@ -66,6 +68,13 @@ impl Args {
                     .value_parser(clap::value_parser!(String))
                     .default_value("S")
                     .help("Initial state (S, SI, RANDOM, or a custom pattern, e.g. 1010)"),
+            )
+            .arg(
+                Arg::new("seed")
+                    .short('n')
+                    .long("seed")
+                    .value_parser(clap::value_parser!(u64))
+                    .help("Random seed"),
             )
             .arg(
                 Arg::new("boundaries")
@@ -132,6 +141,13 @@ impl Args {
             .get_one::<String>("output_type")
             .unwrap()
             .parse::<OutputType>()?;
+        let seed = matches.get_one::<u64>("seed").cloned().unwrap_or_else(|| {
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+        });
+
         // Generate the filename
         let filename = format!(
             "rule_{}_w{}_s{}{}{}{}.png",
@@ -169,6 +185,7 @@ impl Args {
             output_type,
             color_scheme,
             filename,
+            seed,
         })
     }
 }
@@ -183,7 +200,8 @@ Rule: {rule}
 Alpha: {alpha}
 Size: {size}
 Boundaries: {boundaries}
-Initial_state: {initial_state}
+Initial state: {initial_state}
+Seed: {seed}
 Steps: {steps}
 Update pattern: {update_pattern}
 Color scheme: {color_scheme}
@@ -194,6 +212,7 @@ Output type: {output_type}
             size = self.size,
             boundaries = self.boundaries,
             initial_state = self.initial_state,
+            seed = self.seed,
             steps = self.steps,
             update_pattern = self.update_pattern,
             color_scheme = self.color_scheme,

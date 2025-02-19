@@ -7,6 +7,7 @@ pub mod image_output;
 pub mod initial_state;
 pub mod no_output;
 pub mod output;
+pub mod rng;
 pub mod row;
 pub mod rule;
 pub mod stats;
