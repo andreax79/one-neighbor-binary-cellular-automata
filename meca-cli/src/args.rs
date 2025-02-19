@@ -73,9 +73,10 @@ impl Args {
                     .long("boundaries")
                     .value_parser(clap::value_parser!(String))
                     .default_value("periodic")
-                    .help(
-                        "Boundary conditions (Periodic, FixedOn, FixedOff, Adiabatic, Reflective)",
-                    ),
+                    .help(format!(
+                        "Boundary conditions ({})",
+                        Boundaries::valid_values()
+                    )),
             )
             .arg(
                 Arg::new("update")
@@ -94,7 +95,7 @@ impl Args {
                     .long("color")
                     .value_parser(clap::value_parser!(String))
                     .default_value("BlackWhite")
-                    .help("Color scheme (BlackWhite, Omega, Activation)"),
+                    .help(format!("Color scheme ({})", ColorScheme::valid_values())),
             )
             .arg(
                 Arg::new("output_type")
@@ -102,7 +103,7 @@ impl Args {
                     .long("output")
                     .value_parser(clap::value_parser!(String))
                     .default_value("TimeSpaceGraph")
-                    .help("Output (TimeSpaceGraph, TimeSpace, Console, CSV, None)"),
+                    .help(format!("Output type ({})", OutputType::valid_values())),
             )
             .get_matches();
         // Parse the arguments

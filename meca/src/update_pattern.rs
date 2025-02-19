@@ -14,16 +14,17 @@ pub enum UpdatePattern {
 }
 
 impl UpdatePattern {
-    /// Returns a comma-separated list of valid update pattern names.
+    pub const VALID_VALUES: [&'static str; 5] = [
+        "Synchronous",
+        "RasRandomIndependent<n>",
+        "RasRandomOrder",
+        "OasCyclic",
+        "OasEqClocked<n>",
+    ];
+
+    /// Returns a comma-separated list of valid update pattern names
     pub fn valid_values() -> String {
-        let patterns = [
-            "Synchronous",
-            "RasRandomIndependent<n>",
-            "RasRandomOrder",
-            "OasCyclic",
-            "OasEqClocked<n>",
-        ];
-        patterns.join(", ")
+        Self::VALID_VALUES.join(", ")
     }
 }
 

@@ -50,6 +50,13 @@ fn activation_color(cell: &Cell) -> Rgb<u8> {
 }
 
 impl ColorScheme {
+    pub const VALID_VALUES: [&'static str; 3] = ["BlackWhite", "Omega", "Activation"];
+
+    /// Returns a comma-separated list of valid update pattern names
+    pub fn valid_values() -> String {
+        Self::VALID_VALUES.join(", ")
+    }
+
     /// Get the color of the cell based on the color scheme
     pub fn get_color(&self, cell: &Cell) -> Rgb<u8> {
         match self {

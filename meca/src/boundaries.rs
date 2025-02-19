@@ -24,6 +24,14 @@ pub enum Boundaries {
 }
 
 impl Boundaries {
+    pub const VALID_VALUES: [&'static str; 5] =
+        ["Periodic", "FixedOn", "FixedOff", "Adiabatic", "Reflective"];
+
+    /// Returns a comma-separated list of valid update pattern names
+    pub fn valid_values() -> String {
+        Self::VALID_VALUES.join(", ")
+    }
+
     /// Get the state of the cell at index i
     pub fn get_state(&self, cells: &Vec<Cell>, i: isize) -> bool {
         let index = match self {

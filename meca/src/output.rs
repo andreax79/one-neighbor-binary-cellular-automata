@@ -17,6 +17,14 @@ pub enum OutputType {
 }
 
 impl OutputType {
+    pub const VALID_VALUES: [&'static str; 5] =
+        ["TimeSpaceGraph", "TimeSpace", "Console", "CSV", "None"];
+
+    /// Returns a comma-separated list of valid update pattern names
+    pub fn valid_values() -> String {
+        Self::VALID_VALUES.join(", ")
+    }
+
     pub fn open_output(
         &self,
         filename: &str,
