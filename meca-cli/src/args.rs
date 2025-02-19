@@ -1,10 +1,10 @@
-use crate::boundaries::Boundaries;
-use crate::color_scheme::ColorScheme;
-use crate::initial_state::InitialState;
-use crate::output::OutputType;
-use crate::rule::Rule;
-use crate::update_pattern::UpdatePattern;
 use clap::{Arg, Command};
+use meca::boundaries::Boundaries;
+use meca::color_scheme::ColorScheme;
+use meca::initial_state::InitialState;
+use meca::output::OutputType;
+use meca::rule::Rule;
+use meca::update_pattern::UpdatePattern;
 use std::error::Error;
 use std::fmt;
 

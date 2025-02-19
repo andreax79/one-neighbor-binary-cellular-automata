@@ -1,0 +1,13 @@
+[package]
+name = "meca-cli"
+version = "0.1.0"
+edition = "2021"
+default-run = "meca"
+
+[dependencies]
+clap = "4.5.28"
+meca = { path = "../meca" }
+
+[[bin]]
+name = "meca"
+path = "src/main.rs"
