@@ -1,6 +1,7 @@
 [package]
 name = "meca-cli"
 version = "0.1.0"
+authors = ["Andrea Bonomi <andrea.bonomi@gmail.com>"]
 edition = "2021"
 default-run = "meca"
 

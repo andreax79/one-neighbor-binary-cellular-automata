@@ -41,6 +41,8 @@ fn custom_pattern(pattern_str: &String, size: usize) -> Vec<bool> {
 }
 
 impl InitialState {
+    pub const VALID_VALUES: [&'static str; 6] = ["S", "SI", "0", "1", "Random", "Custom"];
+
     /// Parse the initial state from a string
     pub fn parse_initial_state(&self, size: usize, rng: &mut dyn RngCore) -> Vec<bool> {
         match self {

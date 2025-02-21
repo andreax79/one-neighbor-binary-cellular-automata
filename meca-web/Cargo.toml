@@ -1,0 +1,19 @@
+[package]
+name = "meca-web"
+version = "0.1.0"
+authors = ["Andrea Bonomi <andrea.bonomi@gmail.com>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+js-sys = "0.3.77"
+wasm-bindgen = "0.2.84"
+web-sys = { version = "0.3.77", features = ["Window", "Document", "Element", "HtmlElement", "Node", "HtmlCanvasElement", "CanvasRenderingContext2d", "ImageData"] }
+rand_core = "0.9.0"
+rand_pcg = "0.9.0"
+meca = { path = "../meca" }
+
+[dev-dependencies]
+wasm-bindgen-cli = "0.2.84"

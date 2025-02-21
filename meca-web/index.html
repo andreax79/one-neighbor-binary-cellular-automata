@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Example</title>
+    <script src="js/vue.global.js"></script>
+</head>
+<body>
+    <main>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div id="app">
+        <div>
+            <label for="rule">Rule</label>
+            <input v-model="rule" type="number" name="rule" step="1" min="1" max="16" />
+        </div>
+        <div>
+            <label for="boundaries">Boundaries</label>
+            <select v-model="boundaries" name="boundaries">
+                <option v-for="(value, index) in boundariesValues" :key="index" :value="value">
+                  {{ value }}
+                </option>
+            </select>
+        </div>
+        <div>
+            <label for="initialState">Initial State</label>
+            <select v-model="initialState" name="initialState">
+                <option v-for="(value, index) in initialStates" :key="index" :value="value">
+                  {{ value }}
+                </option>
+            </select>
+            <input v-if="initialState == 'Custom'" v-model="customInitialState" type="text" name="customInitialState" />
+        </div>
+        <div>
+            <label for="updatePattern">Update Pattern</label>
+            <select v-model="updatePattern" name="updatePattern">
+                <option v-for="(value, index) in updatePatterns" :key="index" :value="value">
+                  {{ value }}
+                </option>
+            </select>
+            <input v-if="updatePattern.endsWith('<n>')" v-model="updatePatternNumber" type="number" name="updatePatternNumber" />
+        </div>
+        <div>
+            <label for="alpha">Alpha</label>
+            <input type="number" name="alpha" value="0" step="0.001" min="0" max="1">
+        </div>
+        <div>
+            <label for="colorScheme">Color Scheme</label>
+            <select v-model="colorScheme" name="colorScheme">
+                <option v-for="(value, index) in colorSchemes" :key="index" :value="value">
+                  {{ value }}
+                </option>
+            </select>
+        </div>
+        <button @click="render" class="button-primary" id="render">render</button>
+    </div>
+    </main>
+    </div>
+
+    <script type="module">
+        import init, { draw, get_boundaries, get_initial_states, get_update_patterns, get_color_schemes } from "./pkg/meca_web.js";
+        (async () => {
+            await init();
+
+            Vue.createApp({
+                data() {
+                    return {
+                        rule: 6,
+                        boundaries: 'Periodic',
+                        updatePattern: 'Synchronous',
+                        updatePatternNumber: 10,
+                        initialState: 'Random',
+                        customInitialState: '01',
+                        colorScheme: 'BlackWhite',
+                        alpha: 0,
+                        boundariesValues: get_boundaries(),
+                        initialStates: get_initial_states(),
+                        updatePatterns: get_update_patterns(),
+                        colorSchemes: get_color_schemes(),
+                    }
+                },
+                methods: {
+                    render() {
+                        const canvas = document.getElementById('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const initialState = this.initialState == 'Custom' ? this.customInitialState : this.initialState;
+                        const updatePattern = (
+                            this.updatePattern.endsWith('<n>') ?
+                            this.updatePattern.substring(0, this.updatePattern.length - 3) + this.updatePatternNumber :
+                            this.updatePattern
+                        );
+                        console.log(updatePattern);
+                        console.log('rendering');
+                        draw(ctx, 800, 600, this.rule, this.boundaries, initialState, updatePattern, this.alpha, this.colorScheme);
+                    }
+                }
+            }).mount('#app')
+
+        })();
+    </script>
+</body>
+</html>
