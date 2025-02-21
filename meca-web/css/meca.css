@@ -1,0 +1,78 @@
+html, body, div, span,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+    vertical-align: baseline;
+}
+body {
+    line-height: 1;
+}
+
+.window {
+    position: absolute;
+    z-index: 9;
+    top: 10px;
+    left: 10px;
+    background-color: #fff;
+    border: 0.1em solid #000;
+    font-size: 0.8em;
+    line-height: 1.2em;
+}
+
+.window-titlebar {
+    background-color: #000;
+    color: #fff;
+    cursor: move;
+    /*width: 13em;*/
+}
+
+.window-titlebar h1 {
+    font-size: 1em;
+    line-height: 1.5em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.window-content {
+    padding: 1em;
+}
+
+.window label {
+    display: block;
+    margin-bottom: 0.25em;
+    font-weight: bold;
+}
+
+.window select {
+    margin-bottom: 0.5em;
+    width: 10em;
+}
+
+.window input {
+    margin-bottom: 0.5em;
+    width: 5em;
+}
+
+.button-toggle {
+    float: right;
+    background: transparent;
+    color: #fff;
+    border: none;
+    line-height: 1.2em;
+    padding: 0;
+    margin-right: 0.2em;
+    cursor: pointer;
+}
