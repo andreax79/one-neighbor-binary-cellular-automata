@@ -56,6 +56,13 @@ body {
     font-weight: bold;
 }
 
+.window label.sub {
+    width: auto;
+    display: inline-block;
+    margin: 0 0.5em;
+    font-weight: normal;
+}
+
 .window select {
     margin-bottom: 0.5em;
     width: 10em;

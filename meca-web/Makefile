@@ -1,2 +1,6 @@
 all:
-	@wasm-pack build --target web --no-opt
+	@wasm-pack build --no-opt
+	@yarn build
+
+dev:
+	@yarn dev

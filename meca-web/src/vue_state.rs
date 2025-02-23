@@ -35,7 +35,7 @@ impl VueState {
             boundaries: "Periodic".to_string(),
             update_pattern_number: 10,
             initial_state: "S".to_string(),
-            custom_initial_state: "10".to_string(),
+            custom_initial_state: "101100".to_string(),
             update_pattern: "Synchronous".to_string(),
             alpha: 0.0,
             seed: 0,
