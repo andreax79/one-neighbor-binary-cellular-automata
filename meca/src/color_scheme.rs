@@ -42,10 +42,10 @@ fn omega_color(cell: &Cell) -> Rgb<u8> {
 fn activation_color(cell: &Cell) -> Rgb<u8> {
     match cell.activation {
         Activation::NewStateOff => WHITE,
-        Activation::BothOn => BLACK,
-        Activation::NeighborOn => GREEN,
+        Activation::SelfRightOn | Activation::SelfLeftOn | Activation::AllOn => BLACK,
+        Activation::LeftOn | Activation::RightOn | Activation::LeftRightOn => GREEN,
         Activation::SelfOn => RED,
-        Activation::BothOff => BLUE,
+        Activation::AllOff => BLUE,
     }
 }
 
@@ -148,18 +148,18 @@ mod tests {
             big_omega: 1.0,
             alpha: 0.0,
         };
-        let both_on = Cell {
+        let all_on = Cell {
             state: true,
             rule: rule,
-            activation: Activation::BothOn,
+            activation: Activation::AllOn,
             omega: 0.0,
             big_omega: 1.0,
             alpha: 0.0,
         };
-        let neighbor_on = Cell {
+        let left_on = Cell {
             state: true,
             rule: rule,
-            activation: Activation::NeighborOn,
+            activation: Activation::LeftOn,
             omega: 0.0,
             big_omega: 1.0,
             alpha: 0.0,
@@ -172,19 +172,19 @@ mod tests {
             big_omega: 1.0,
             alpha: 0.0,
         };
-        let both_off = Cell {
+        let all_off = Cell {
             state: true,
             rule: rule,
-            activation: Activation::BothOff,
+            activation: Activation::AllOff,
             omega: 0.0,
             big_omega: 1.0,
             alpha: 0.0,
         };
 
         assert!(ColorScheme::ActivationColor.get_color(&new_state_off) == WHITE);
-        assert!(ColorScheme::ActivationColor.get_color(&both_on) == BLACK);
-        assert!(ColorScheme::ActivationColor.get_color(&neighbor_on) == GREEN);
+        assert!(ColorScheme::ActivationColor.get_color(&all_on) == BLACK);
+        assert!(ColorScheme::ActivationColor.get_color(&left_on) == GREEN);
         assert!(ColorScheme::ActivationColor.get_color(&self_on) == RED);
-        assert!(ColorScheme::ActivationColor.get_color(&both_off) == BLUE);
+        assert!(ColorScheme::ActivationColor.get_color(&all_off) == BLUE);
     }
 }

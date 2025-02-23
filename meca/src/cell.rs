@@ -5,33 +5,28 @@ use std::fmt;
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Cell {
-    pub state: bool,
     pub rule: Rule,
-    pub activation: Activation,
-    pub omega: f64,
-    pub big_omega: f64,
     pub alpha: f64,
-}
-
-fn neighbor_index(i: usize, time: usize) -> isize {
-    let offset = if time % 2 == 1 { 1 } else { -1 };
-    i as isize + offset
+    pub big_omega: f64, // 1 / (1 - alpha)
+    pub state: bool,
+    pub omega: f64,
+    pub activation: Activation,
 }
 
 impl Cell {
     pub fn new(rule: Rule, alpha: f64, state: bool) -> Self {
         // Constructor with rule, alpha and state
         Self {
-            state: state,
             rule: rule,
+            alpha: alpha,
+            big_omega: 1.0 / (1.0 - alpha),
+            state: state,
             activation: if state {
-                Activation::BothOn
+                Activation::AllOn
             } else {
                 Activation::NewStateOff
             },
             omega: if state { 1.0 / (1.0 - alpha) } else { 0.0 },
-            big_omega: 1.0 / (1.0 - alpha),
-            alpha: alpha,
         }
     }
 
@@ -43,23 +38,26 @@ impl Cell {
         boundaries: &Boundaries,
     ) -> Self {
         // Update the cell
-        let n = neighbor_index(i, time);
-        let neighbor_state = boundaries.get_state(cells, n);
-        let mut new_state = self.rule.compute(self.state, neighbor_state);
-        let omega = (self.omega * self.alpha) + if new_state { 1.0 } else { 0.0 };
-        let big_omega = self.big_omega;
+        let (mut new_state, left_neighbor_state, right_neighbor_state) =
+            self.rule.step(cells, i, time, boundaries);
 
+        let omega = (self.omega * self.alpha) + if new_state { 1.0 } else { 0.0 };
         if omega != 0.5 {
-            new_state = (omega / big_omega) > 0.5;
+            new_state = (omega / self.big_omega) > 0.5;
         }
 
         Self {
-            state: new_state,
             rule: self.rule.clone(),
-            activation: Activation::from_state(self.state, neighbor_state, new_state),
-            omega: omega,
-            big_omega: big_omega,
             alpha: self.alpha,
+            big_omega: self.big_omega,
+            state: new_state,
+            omega: omega,
+            activation: Activation::from_state(
+                left_neighbor_state,
+                self.state,
+                right_neighbor_state,
+                new_state,
+            ),
         }
     }
 }

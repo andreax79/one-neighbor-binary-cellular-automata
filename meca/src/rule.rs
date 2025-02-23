@@ -1,8 +1,15 @@
+use crate::boundaries::Boundaries;
+use crate::cell::Cell;
 use std::fmt;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Rule {
     pub number: u8, // Only allows values 0-15
+}
+
+fn neighbor_index(i: usize, time: usize) -> isize {
+    let offset = if time % 2 == 1 { 1 } else { -1 };
+    i as isize + offset
 }
 
 impl Rule {
@@ -11,6 +18,20 @@ impl Rule {
             return Err("Invalid rule number: must be between 0 and 15");
         }
         Ok(Self { number })
+    }
+
+    pub fn step(
+        &self,
+        cells: &Vec<Cell>,
+        i: usize,
+        time: usize,
+        boundaries: &Boundaries,
+    ) -> (bool, bool, bool) {
+        let cell_state = boundaries.get_state(cells, i as isize);
+        let n = neighbor_index(i, time);
+        let neighbor_state = boundaries.get_state(cells, n);
+        let new_state = self.compute(cell_state, neighbor_state);
+        (new_state, neighbor_state, false)
     }
 
     pub fn compute(&self, self_cell: bool, neighbor_cell: bool) -> bool {
