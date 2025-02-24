@@ -1,11 +1,16 @@
 use crate::color_scheme::ColorScheme;
-use crate::console_output::ConsoleOutput;
-use crate::image_output::{ImageOutput, DEFAULT_CELL_SIZE};
-use crate::no_output::NoOutput;
+use crate::config::Configuration;
+use crate::output::console::ConsoleOutput;
+use crate::output::image::{ImageOutput, DEFAULT_CELL_SIZE};
+use crate::output::no_output::NoOutput;
 use crate::row::Row;
-use std::error::Error;
+use anyhow::Result;
 use std::fmt;
 use std::str;
+
+pub mod console;
+pub mod image;
+pub mod no_output;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum OutputType {
@@ -41,10 +46,10 @@ impl OutputType {
 }
 
 impl str::FromStr for OutputType {
-    type Err = &'static str;
+    type Err = anyhow::Error;
 
     /// Parse the output type from a string
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         // Split the string into a prefix and a number
         let (prefix, num_str) = s.split_at(s.find(|c: char| c.is_digit(10)).unwrap_or(s.len()));
         let cell_size = if num_str.is_empty() {
@@ -59,7 +64,7 @@ impl str::FromStr for OutputType {
             "csv" => Ok(OutputType::CSV),
             "timespace" => Ok(OutputType::TimeSpace(cell_size)),
             "timespacegraph" => Ok(OutputType::TimeSpaceGraph(cell_size)),
-            _ => Err("Invalid output option: must be 'TimeSpaceGraph', 'TimeSpace', 'Console', or 'None'"),
+            _ => Err(anyhow::anyhow!("Invalid output option: must be 'TimeSpaceGraph', 'TimeSpace', 'Console', or 'None'")),
         }
     }
 }
@@ -90,8 +95,8 @@ impl fmt::Display for OutputType {
 }
 
 pub trait Output {
-    fn add_row(&mut self, row: &Row);
-    fn close(&mut self) -> Result<(), Box<dyn Error>>;
+    fn add_row(&mut self, row: &Row, config: &dyn Configuration);
+    fn close(&mut self) -> Result<()>;
 }
 
 #[cfg(test)]

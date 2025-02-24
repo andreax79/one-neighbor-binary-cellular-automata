@@ -1,4 +1,5 @@
 <template>
+    <canvas ref="canvas"></canvas>
     <div class="window" ref="window">
         <div class="window-titlebar" ref="titlebar">
             <button aria-label="Toggle" class="button-toggle" @click="toggle">&#9645;</button>
@@ -7,8 +8,14 @@
         <div class="window-content" ref="content">
             <div>
                 <label for="rule">Rule</label>
-                <input v-model="rule" type="number" name="rule" step="1" min="0" max="15" />
-                <rule v-model="rule" :bits="4" />
+                <select v-model="rule_type" name="rule_type">
+                    <option v-for="(value, index) in rule_type_values" :key="index" :value="value">
+                      {{ value }}
+                    </option>
+                </select>
+                <label for="rule" class="sub">n:</label>
+                <input v-model="rule" type="number" name="rule" step="1" min="0" max="rule_type == '1nCA' ? 15 : 255" />
+                <rule v-model="rule" :bits="rule_type == '1nCA' ? 4 : 8" />
             </div>
             <div>
                 <label for="steps">Steps</label>
@@ -46,10 +53,8 @@
             </div>
             <div>
                 <label for="alpha">Alpha</label>
-                <input v-model="alpha" type="number" name="alpha" value="0" step="0.001" min="0" max="1">
+                <input v-model="alpha" type="number" name="alpha" value="0" step="0.001" min="0" max="1" />
             </div>
-
-
             <div>
                 <label for="color_scheme">Color Scheme</label>
                 <select v-model="color_scheme" name="color_scheme">
@@ -57,6 +62,8 @@
                       {{ value }}
                     </option>
                 </select>
+                <label for="cell_size" class="sub">cell size:</label>
+                <input v-model="cell_size" type="number" name="cell_size" value="0" step="1" min="1" />
             </div>
             <button @click="render" class="button-primary" id="render">render</button>
         </div>
@@ -77,11 +84,14 @@ export default defineComponent({
     },
     methods: {
         render() {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
+            const canvas = this.$refs.canvas;
             console.log('rendering');
-            const stats = draw(ctx, this, 800, 600);
-            console.log(stats);
+            try {
+                const stats = draw(canvas, this, 800, 600);
+                console.log(stats);
+            } catch (ex) {
+                console.log(ex);
+            }
         },
         toggle() {
             console.log('toggling');
@@ -116,7 +126,7 @@ export default defineComponent({
         console.log('mounted');
         this.$refs.titlebar.onmousedown = this.dragStart;
         const width = this.$refs.content.getBoundingClientRect().width.toFixed(0);
-        this.$refs.titlebar.style.width = width + 'px';
+        this.$refs.titlebar.style['min-width'] = width + 'px';
     }
 })
 </script>

@@ -1,8 +1,10 @@
+use crate::config::Configuration;
 use crate::output::Output;
 use crate::output::OutputType;
 use crate::row::Row;
-use std::error::Error;
+use anyhow::Result;
 
+/// Print the row to the console
 pub struct ConsoleOutput {
     format_fun: fn(&Row) -> String,
 }
@@ -38,11 +40,11 @@ impl ConsoleOutput {
 
 impl Output for ConsoleOutput {
     /// Print the row to the console
-    fn add_row(&mut self, row: &Row) {
+    fn add_row(&mut self, row: &Row, _config: &dyn Configuration) {
         println!("{}", (self.format_fun)(row));
     }
 
-    fn close(&mut self) -> Result<(), Box<dyn Error>> {
+    fn close(&mut self) -> Result<()> {
         Ok(())
     }
 }

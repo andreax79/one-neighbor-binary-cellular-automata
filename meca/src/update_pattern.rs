@@ -1,12 +1,14 @@
 use crate::cell::Cell;
+use crate::config::Configuration;
 use crate::rng::generate_random_order_indexes;
 use crate::rng::random_range;
 use crate::row::Row;
+use anyhow::Result;
 use rand_core::RngCore;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum UpdatePattern {
     Synchronous,                 // all cells updated in parallel
     RasRandomIndependent(usize), // n random cells updated per step
@@ -32,17 +34,17 @@ impl UpdatePattern {
 
 impl UpdatePattern {
     /// Update the row of cells according to the update pattern
-    pub fn update(self, row: &Row, rng: &mut dyn RngCore) -> Vec<Cell> {
+    pub fn update(self, row: &Row, rng: &mut dyn RngCore, config: &dyn Configuration) -> Vec<Cell> {
         match self {
             UpdatePattern::RasRandomIndependent(n) => {
-                self.ras_random_independent_update(row, n, rng)
+                self.ras_random_independent_update(row, n, rng, config)
             }
-            UpdatePattern::RasRandomOrder => self.ras_random_order_update(row, rng),
-            UpdatePattern::OasCyclic => self.oas_cyclic_update(row),
+            UpdatePattern::RasRandomOrder => self.ras_random_order_update(row, rng, config),
+            UpdatePattern::OasCyclic => self.oas_cyclic_update(row, config),
             UpdatePattern::OasEqClocked(eq_clocked_times) => {
-                self.oas_eq_clocked_update(row, eq_clocked_times)
+                self.oas_eq_clocked_update(row, eq_clocked_times, config)
             }
-            _ => self.synchronous_update(row),
+            _ => self.synchronous_update(row, config),
         }
     }
 
@@ -52,48 +54,59 @@ impl UpdatePattern {
         row: &Row,
         n: usize,
         rng: &mut dyn RngCore,
+        config: &dyn Configuration,
     ) -> Vec<Cell> {
         let mut new_cells = row.cells.clone();
 
         for _ in 0..n {
             // Generate a random index
             let i = random_range(0..row.cells.len(), rng);
-            new_cells[i] = row.cells[i].update(&new_cells, i, row.t, &row.boundaries);
+            new_cells[i] = row.cells[i].update(&new_cells, i, row.t, config);
         }
 
         new_cells
     }
 
     /// At each time step, all nodes are updated, but in random order
-    fn ras_random_order_update(self, row: &Row, rng: &mut dyn RngCore) -> Vec<Cell> {
+    fn ras_random_order_update(
+        self,
+        row: &Row,
+        rng: &mut dyn RngCore,
+        config: &dyn Configuration,
+    ) -> Vec<Cell> {
         let mut new_cells = row.cells.clone();
 
         for &i in generate_random_order_indexes(row.get_size(), rng).iter() {
-            new_cells[i] = row.cells[i].update(&new_cells, i, row.t, &row.boundaries);
+            new_cells[i] = row.cells[i].update(&new_cells, i, row.t, config);
         }
 
         new_cells
     }
 
     /// At each time step, all nodes are updated in a predefined order
-    fn oas_cyclic_update(self, row: &Row) -> Vec<Cell> {
+    fn oas_cyclic_update(self, row: &Row, config: &dyn Configuration) -> Vec<Cell> {
         let mut new_cells = row.cells.clone();
 
-        for &i in row.update_order.as_ref().unwrap().iter() {
-            new_cells[i] = row.cells[i].update(&new_cells, i, row.t, &row.boundaries);
+        for &i in config.get_update_order().unwrap().iter() {
+            new_cells[i] = row.cells[i].update(&new_cells, i, row.t, config);
         }
 
         new_cells
     }
 
     /// At each time step, all nodes are updated in a predefined order, with a clock period
-    fn oas_eq_clocked_update(self, row: &Row, eq_clocked_times: usize) -> Vec<Cell> {
+    fn oas_eq_clocked_update(
+        self,
+        row: &Row,
+        eq_clocked_times: usize,
+        config: &dyn Configuration,
+    ) -> Vec<Cell> {
         let mut new_cells = row.cells.clone();
 
         for j in 0..eq_clocked_times {
             for i in 0..row.get_size() {
-                if row.update_order.as_ref().unwrap()[i] == j {
-                    new_cells[i] = row.cells[i].update(&new_cells, i, row.t, &row.boundaries);
+                if config.get_update_order().unwrap()[i] == j {
+                    new_cells[i] = row.cells[i].update(&new_cells, i, row.t, config);
                 }
             }
         }
@@ -102,20 +115,20 @@ impl UpdatePattern {
     }
 
     /// All cells are updated in parallel at each time step
-    fn synchronous_update(self, row: &Row) -> Vec<Cell> {
+    fn synchronous_update(self, row: &Row, config: &dyn Configuration) -> Vec<Cell> {
         row.cells
             .iter()
             .enumerate()
-            .map(|(i, cell)| cell.update(&row.cells, i, row.t, &row.boundaries))
+            .map(|(i, cell)| cell.update(&row.cells, i, row.t, config))
             .collect()
     }
 }
 
 impl FromStr for UpdatePattern {
-    type Err = String;
+    type Err = anyhow::Error;
 
     /// Parse the update pattern from a string
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         // Split the string into a prefix and a number
         let (prefix, num_str) = s.split_at(s.find(|c: char| c.is_digit(10)).unwrap_or(s.len()));
         let num = if num_str.is_empty() {
@@ -130,7 +143,7 @@ impl FromStr for UpdatePattern {
             "rasrandomorder" => Ok(UpdatePattern::RasRandomOrder),
             "oascyclic" => Ok(UpdatePattern::OasCyclic),
             "oaseqclocked" => Ok(UpdatePattern::OasEqClocked(num)),
-            _ => Err(format!(
+            _ => Err(anyhow::anyhow!(
                 "Invalid update pattern. Valid patterns are: {}",
                 Self::valid_values()
             )),
@@ -158,14 +171,26 @@ mod tests {
 
     #[test]
     fn test_from_str_valid() {
-        assert!("Synchronous".parse::<UpdatePattern>() == Ok(UpdatePattern::Synchronous));
-        assert!(
-            "RasRandomIndependent5".parse::<UpdatePattern>()
-                == Ok(UpdatePattern::RasRandomIndependent(5))
+        assert_eq!(
+            "Synchronous".parse::<UpdatePattern>().unwrap(),
+            UpdatePattern::Synchronous
         );
-        assert!("RasRandomOrder".parse::<UpdatePattern>() == Ok(UpdatePattern::RasRandomOrder));
-        assert!("OasCyclic".parse::<UpdatePattern>() == Ok(UpdatePattern::OasCyclic));
-        assert!("OasEqClocked10".parse::<UpdatePattern>() == Ok(UpdatePattern::OasEqClocked(10)));
+        assert_eq!(
+            "RasRandomIndependent5".parse::<UpdatePattern>().unwrap(),
+            UpdatePattern::RasRandomIndependent(5)
+        );
+        assert_eq!(
+            "RasRandomOrder".parse::<UpdatePattern>().unwrap(),
+            UpdatePattern::RasRandomOrder
+        );
+        assert_eq!(
+            "OasCyclic".parse::<UpdatePattern>().unwrap(),
+            UpdatePattern::OasCyclic
+        );
+        assert_eq!(
+            "OasEqClocked10".parse::<UpdatePattern>().unwrap(),
+            UpdatePattern::OasEqClocked(10)
+        );
     }
 
     #[test]
@@ -177,10 +202,13 @@ mod tests {
 
     #[test]
     fn test_display() {
-        assert!(UpdatePattern::Synchronous.to_string() == "Synchronous");
-        assert!(UpdatePattern::RasRandomIndependent(3).to_string() == "RasRandomIndependent3");
-        assert!(UpdatePattern::RasRandomOrder.to_string() == "RasRandomOrder");
-        assert!(UpdatePattern::OasCyclic.to_string() == "OasCyclic");
-        assert!(UpdatePattern::OasEqClocked(7).to_string() == "OasEqClocked7");
+        assert_eq!(UpdatePattern::Synchronous.to_string(), "Synchronous");
+        assert_eq!(
+            UpdatePattern::RasRandomIndependent(3).to_string(),
+            "RasRandomIndependent3"
+        );
+        assert_eq!(UpdatePattern::RasRandomOrder.to_string(), "RasRandomOrder");
+        assert_eq!(UpdatePattern::OasCyclic.to_string(), "OasCyclic");
+        assert_eq!(UpdatePattern::OasEqClocked(7).to_string(), "OasEqClocked7");
     }
 }

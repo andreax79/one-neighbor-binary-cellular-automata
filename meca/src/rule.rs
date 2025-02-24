@@ -1,85 +1,70 @@
 use crate::boundaries::Boundaries;
 use crate::cell::Cell;
+use anyhow::Result;
 use std::fmt;
+use std::str::FromStr;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Rule {
-    pub number: u8, // Only allows values 0-15
-}
+pub mod eca; // Elementary Cellular Automata
+pub mod onca; // One Neighbor Cellular Automata
 
-fn neighbor_index(i: usize, time: usize) -> isize {
-    let offset = if time % 2 == 1 { 1 } else { -1 };
-    i as isize + offset
-}
-
-impl Rule {
-    pub fn new(number: u8) -> Result<Self, &'static str> {
-        if number > 15 {
-            return Err("Invalid rule number: must be between 0 and 15");
-        }
-        Ok(Self { number })
-    }
-
-    pub fn step(
+pub trait Rule: fmt::Display {
+    /// Step function for the rule
+    fn step(
         &self,
         cells: &Vec<Cell>,
         i: usize,
         time: usize,
         boundaries: &Boundaries,
-    ) -> (bool, bool, bool) {
-        let cell_state = boundaries.get_state(cells, i as isize);
-        let n = neighbor_index(i, time);
-        let neighbor_state = boundaries.get_state(cells, n);
-        let new_state = self.compute(cell_state, neighbor_state);
-        (new_state, neighbor_state, false)
+    ) -> (bool, bool, bool);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum RuleType {
+    ONCA,
+    ECA,
+}
+
+impl RuleType {
+    pub const VALID_VALUES: [&'static str; 2] = ["1nCA", "ECA"];
+
+    /// Returns a comma-separated list of valid rule names
+    pub fn valid_values() -> String {
+        Self::VALID_VALUES.join(", ")
     }
 
-    pub fn compute(&self, self_cell: bool, neighbor_cell: bool) -> bool {
-        // Compute the new state of the cell
-        match self.number {
-            0 => false,
-            1 => !(self_cell || neighbor_cell),
-            2 => !self_cell && neighbor_cell,
-            3 => !self_cell,
-            4 => self_cell && !neighbor_cell,
-            5 => !neighbor_cell,
-            6 => self_cell ^ neighbor_cell,
-            7 => !(self_cell & neighbor_cell),
-            8 => self_cell & neighbor_cell,
-            9 => !(self_cell ^ neighbor_cell),
-            10 => neighbor_cell,
-            11 => !(self_cell & !neighbor_cell),
-            12 => self_cell,
-            13 => !(!self_cell & neighbor_cell),
-            14 => self_cell || neighbor_cell,
-            _ => true,
+    /// Get the rule for the given number
+    pub fn get_rule(self, number: u8) -> Result<Box<dyn Rule>> {
+        match self {
+            RuleType::ONCA => {
+                onca::OnCARule::new(number).map(|rule| Box::new(rule) as Box<dyn Rule>)
+            }
+            RuleType::ECA => eca::ECARule::new(number).map(|rule| Box::new(rule) as Box<dyn Rule>),
         }
-    }
-
-    pub fn get_sensitivity(&self) -> f64 {
-        // Binder 1993, Binder 1994
-        let args = [
-            ((false, false), (false, true)),
-            ((false, false), (true, false)),
-            ((false, true), (false, false)),
-            ((false, true), (true, true)),
-            ((true, false), (true, true)),
-            ((true, false), (false, false)),
-            ((true, true), (true, false)),
-            ((true, true), (false, true)),
-        ];
-
-        let count = args
-            .iter()
-            .filter(|&&(a, b)| self.compute(a.0, a.1) != self.compute(b.0, b.1))
-            .count() as f64;
-        count / (args.len() as f64)
     }
 }
 
-impl fmt::Display for Rule {
-    /// Implement the Display trait for Rule to print the rule number
+impl FromStr for RuleType {
+    type Err = anyhow::Error;
+
+    /// Implement the FromStr trait for RuleType to parse the rule
+    fn from_str(s: &str) -> Result<Self> {
+        match s.to_lowercase().as_str() {
+            "1nca" => Ok(RuleType::ONCA),
+            "eca" => Ok(RuleType::ECA),
+            _ => Err(anyhow::anyhow!(
+                "Invalid rule type. Valid types are: {}",
+                Self::valid_values()
+            )),
+        }
+    }
+}
+
+impl fmt::Display for RuleType {
+    /// Implement the Display trait for RuleType to print the rule type
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.number)
+        match self {
+            RuleType::ONCA => write!(f, "1nCA"),
+            RuleType::ECA => write!(f, "ECA"),
+        }
     }
 }

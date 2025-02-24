@@ -827,6 +827,7 @@ checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
 name = "meca"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "image",
  "rand_core 0.9.1",
  "rand_pcg",
@@ -846,6 +847,7 @@ dependencies = [
 name = "meca-web"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "js-sys",
  "meca",
  "rand_core 0.9.1",

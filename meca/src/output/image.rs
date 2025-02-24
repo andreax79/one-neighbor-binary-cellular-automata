@@ -1,14 +1,16 @@
 use crate::color_scheme::{ColorScheme, BLUE, CYAN, ORANGE, RED, WHITE};
+use crate::config::Configuration;
 use crate::output::Output;
 use crate::output::OutputType;
 use crate::row::Row;
+use anyhow::Result;
 use image::{Rgb, RgbImage};
-use std::error::Error;
 use std::str;
 use std::string::String;
 
 pub const DEFAULT_CELL_SIZE: usize = 2;
 
+// Output the rows to an image
 pub struct ImageOutput {
     color_scheme: ColorScheme,
     cell_size: usize,
@@ -87,9 +89,9 @@ impl ImageOutput {
 
 impl Output for ImageOutput {
     /// Draw the row on the image
-    fn add_row(&mut self, row: &Row) {
+    fn add_row(&mut self, row: &Row, config: &dyn Configuration) {
         row.cells.iter().enumerate().for_each(|(j, cell)| {
-            let color = self.color_scheme.get_color(&cell);
+            let color = self.color_scheme.get_color(&cell, j, config);
             for dx in 0..self.cell_size {
                 for dy in 0..self.cell_size {
                     self.img.put_pixel(
@@ -101,7 +103,7 @@ impl Output for ImageOutput {
             }
         });
         if let OutputType::TimeSpaceGraph(_) = self.output_type {
-            let value: f64 = row.get_value();
+            let value: f64 = row.get_value(config);
             let delta: f64 = (value - self.prev_value).abs();
             let ones: usize = row.get_ones();
             let ones_delta: usize = (ones as isize - self.prev_ones as isize).abs() as usize;
@@ -137,7 +139,7 @@ impl Output for ImageOutput {
     }
 
     /// Save the image
-    fn close(&mut self) -> Result<(), Box<dyn Error>> {
+    fn close(&mut self) -> Result<()> {
         self.img.save(&self.filename)?;
         eprintln!("Image name: {}", self.filename);
         Ok(())

@@ -1,6 +1,5 @@
 use crate::cell::Cell;
 use crate::rng::random_bool;
-use crate::rule::Rule;
 use rand_core::RngCore;
 use std::fmt;
 
@@ -74,12 +73,11 @@ impl InitialState {
     pub fn prepare_initial_state(
         &self,
         size: usize,
-        rule: Rule,
         alpha: f64,
         rng: &mut dyn RngCore,
     ) -> Vec<Cell> {
         let state = self.parse_initial_state(size, rng);
-        state.iter().map(|s| Cell::new(rule, alpha, *s)).collect()
+        state.iter().map(|s| Cell::new(alpha, *s)).collect()
     }
 }
 

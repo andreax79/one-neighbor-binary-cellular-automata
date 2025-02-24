@@ -1,13 +1,17 @@
+use anyhow::Result;
 use meca::boundaries::Boundaries;
 use meca::color_scheme::ColorScheme;
+use meca::config::StdConfiguration;
 use meca::initial_state::InitialState;
-use meca::rule::Rule;
+use meca::rule::RuleType;
 use meca::update_pattern::UpdatePattern;
+use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct VueState {
     pub rule: u8,
+    pub rule_type: String,
     pub steps: usize,
     pub size: usize,
     pub boundaries: String,
@@ -19,6 +23,7 @@ pub struct VueState {
     pub seed: u64,
     pub color_scheme: String,
     pub cell_size: usize,
+    pub rule_type_values: Vec<String>,
     pub boundaries_values: Vec<String>,
     pub initial_state_values: Vec<String>,
     pub update_pattern_values: Vec<String>,
@@ -30,6 +35,7 @@ impl VueState {
     pub fn new() -> Self {
         VueState {
             rule: 6,
+            rule_type: "1nCA".to_string(),
             steps: 600,
             size: 800,
             boundaries: "Periodic".to_string(),
@@ -41,6 +47,10 @@ impl VueState {
             seed: 0,
             color_scheme: "BlackWhite".to_string(),
             cell_size: 1,
+            rule_type_values: RuleType::VALID_VALUES
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
             boundaries_values: Boundaries::VALID_VALUES
                 .iter()
                 .map(|s| s.to_string())
@@ -61,12 +71,12 @@ impl VueState {
     }
 
     /// Get the rule
-    pub fn get_rule(&self) -> Result<Rule, &'static str> {
-        Rule::new(self.rule)
+    pub fn get_rule_type(&self) -> Result<RuleType> {
+        self.rule_type.parse::<RuleType>()
     }
 
     /// Get the initial state
-    pub fn get_initial_state(&self) -> Result<InitialState, String> {
+    pub fn get_initial_state(&self) -> Result<InitialState> {
         if self.initial_state == "Custom" {
             Ok(InitialState::String(self.custom_initial_state.to_string()))
         } else {
@@ -75,17 +85,17 @@ impl VueState {
     }
 
     /// Get the color scheme
-    pub fn get_color_scheme(&self) -> Result<ColorScheme, &'static str> {
+    pub fn get_color_scheme(&self) -> Result<ColorScheme> {
         self.color_scheme.parse::<ColorScheme>()
     }
 
     /// Get the boundaries
-    pub fn get_boundaries(&self) -> Result<Boundaries, &'static str> {
+    pub fn get_boundaries(&self) -> Result<Boundaries> {
         self.boundaries.parse::<Boundaries>()
     }
 
     /// Get the update pattern
-    pub fn get_update_pattern(&self) -> Result<UpdatePattern, String> {
+    pub fn get_update_pattern(&self) -> Result<UpdatePattern> {
         let update_pattern = if self.update_pattern.ends_with("<n>") {
             format!(
                 "{}{}",
@@ -96,5 +106,19 @@ impl VueState {
             self.update_pattern.clone()
         };
         update_pattern.parse::<UpdatePattern>()
+    }
+
+    pub fn get_config(&self, rng: &mut dyn RngCore) -> Result<StdConfiguration> {
+        Ok(StdConfiguration::new(
+            self.get_rule_type()?.get_rule(self.rule)?,
+            self.size,
+            self.alpha,
+            self.get_boundaries()?,
+            self.get_update_pattern()?,
+            self.get_initial_state()?,
+            self.seed,
+            self.steps,
+            rng,
+        ))
     }
 }

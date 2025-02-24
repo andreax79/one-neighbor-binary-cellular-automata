@@ -1,7 +1,9 @@
+use crate::config::Configuration;
 use crate::output::Output;
 use crate::row::Row;
-use std::error::Error;
+use anyhow::Result;
 
+// Suppress output
 pub struct NoOutput {}
 
 impl NoOutput {
@@ -11,9 +13,9 @@ impl NoOutput {
 }
 
 impl Output for NoOutput {
-    fn add_row(&mut self, _row: &Row) {}
+    fn add_row(&mut self, _row: &Row, _config: &dyn Configuration) {}
 
-    fn close(&mut self) -> Result<(), Box<dyn Error>> {
+    fn close(&mut self) -> Result<()> {
         Ok(())
     }
 }

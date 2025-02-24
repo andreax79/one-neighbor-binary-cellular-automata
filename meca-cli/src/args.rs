@@ -3,14 +3,15 @@ use meca::boundaries::Boundaries;
 use meca::color_scheme::ColorScheme;
 use meca::initial_state::InitialState;
 use meca::output::OutputType;
-use meca::rule::Rule;
+use meca::rule::RuleType;
 use meca::update_pattern::UpdatePattern;
 use std::error::Error;
 use std::fmt;
 use std::time::SystemTime;
 
 pub struct Args {
-    pub rule: Rule,
+    pub rule_number: u8,
+    pub rule_type: RuleType,
     pub size: usize,
     pub alpha: f64,
     pub boundaries: Boundaries,
@@ -35,7 +36,15 @@ impl Args {
                     .long("rule")
                     .value_parser(clap::value_parser!(u8))
                     .required(true)
-                    .help("Rule number (0-15)"),
+                    .help("Rule number"),
+            )
+            .arg(
+                Arg::new("family")
+                    .short('f')
+                    .long("family")
+                    .value_parser(clap::value_parser!(String))
+                    .default_value("1nCA")
+                    .help("Rule family (1nCA or ECA)"),
             )
             .arg(
                 Arg::new("size")
@@ -116,7 +125,11 @@ impl Args {
             )
             .get_matches();
         // Parse the arguments
-        let rule = Rule::new(*matches.get_one::<u8>("rule").unwrap())?;
+        let rule_number = *matches.get_one::<u8>("rule").unwrap();
+        let rule_type = matches
+            .get_one::<String>("family")
+            .unwrap()
+            .parse::<RuleType>()?;
         let size = *matches.get_one::<usize>("size").unwrap();
         let steps = *matches.get_one::<usize>("steps").unwrap();
         let alpha = *matches.get_one::<f64>("alpha").unwrap();
@@ -151,7 +164,7 @@ impl Args {
         // Generate the filename
         let filename = format!(
             "rule_{}_w{}_s{}{}{}{}.png",
-            rule.number,
+            rule_number,
             size,
             steps,
             // Add the initial state to the filename
@@ -175,7 +188,8 @@ impl Args {
         );
 
         Ok(Args {
-            rule,
+            rule_number,
+            rule_type,
             size,
             alpha,
             boundaries,
@@ -196,7 +210,7 @@ impl fmt::Display for Args {
         write!(
             f,
             "\
-Rule: {rule}
+Rule: {rule_type} {rule_number}
 Alpha: {alpha}
 Size: {size}
 Boundaries: {boundaries}
@@ -207,7 +221,8 @@ Update pattern: {update_pattern}
 Color scheme: {color_scheme}
 Output type: {output_type}
 ",
-            rule = self.rule,
+            rule_number = self.rule_number,
+            rule_type = self.rule_type,
             alpha = self.alpha,
             size = self.size,
             boundaries = self.boundaries,

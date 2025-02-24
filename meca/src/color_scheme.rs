@@ -1,5 +1,7 @@
 use crate::activation::Activation;
 use crate::cell::Cell;
+use crate::config::Configuration;
+use anyhow::Result;
 use image::Rgb;
 use std::fmt;
 use std::str;
@@ -19,7 +21,7 @@ pub enum ColorScheme {
     ActivationColor,
 }
 
-// Compute the color of the cell based on the black and white color scheme
+/// Compute the color of the cell based on the black and white color scheme
 fn no_color(cell: &Cell) -> Rgb<u8> {
     if cell.state {
         BLACK
@@ -29,8 +31,8 @@ fn no_color(cell: &Cell) -> Rgb<u8> {
 }
 
 /// Compute the color of the cell based on the omega value
-fn omega_color(cell: &Cell) -> Rgb<u8> {
-    let c = (cell.omega / cell.big_omega * 255.0) as u8;
+fn omega_color(cell: &Cell, big_omega: f64) -> Rgb<u8> {
+    let c = (cell.omega / big_omega * 255.0) as u8;
     if cell.state {
         Rgb([255 - c, 255 - c, 255 - c])
     } else {
@@ -58,25 +60,27 @@ impl ColorScheme {
     }
 
     /// Get the color of the cell based on the color scheme
-    pub fn get_color(&self, cell: &Cell) -> Rgb<u8> {
+    pub fn get_color(&self, cell: &Cell, i: usize, config: &dyn Configuration) -> Rgb<u8> {
         match self {
             ColorScheme::BlackWhite => no_color(&cell),
-            ColorScheme::OmegaColor => omega_color(&cell),
+            ColorScheme::OmegaColor => omega_color(&cell, config.get_big_omega(i)),
             ColorScheme::ActivationColor => activation_color(&cell),
         }
     }
 }
 
 impl str::FromStr for ColorScheme {
-    type Err = &'static str;
+    type Err = anyhow::Error;
 
     /// Implement the FromStr trait for ColorScheme to parse the color scheme
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
             "blackwhite" => Ok(ColorScheme::BlackWhite),
             "omega" => Ok(ColorScheme::OmegaColor),
             "activation" => Ok(ColorScheme::ActivationColor),
-            _ => Err("Invalid color scheme: must be 'BlackWhite', 'Omega', or 'Activation'"),
+            _ => Err(anyhow::anyhow!(
+                "Invalid color scheme: must be 'BlackWhite', 'Omega', or 'Activation'"
+            )),
         }
     }
 }
@@ -95,7 +99,6 @@ impl fmt::Display for ColorScheme {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rule::Rule;
 
     #[test]
     fn test_parse_valid() {
@@ -126,65 +129,47 @@ mod tests {
         assert!(ColorScheme::OmegaColor.to_string() == "Omega");
         assert!(ColorScheme::ActivationColor.to_string() == "Activation");
     }
-
     #[test]
     fn test_blackwhite_color_scheme() {
-        let rule = Rule::new(0).unwrap();
-        let black_cell = Cell::new(rule, 0.0, true);
-        let white_cell = Cell::new(rule, 0.0, false);
+        let black_cell = Cell::new(0.0, true);
+        let white_cell = Cell::new(0.0, false);
 
-        assert!(ColorScheme::BlackWhite.get_color(&black_cell) == BLACK);
-        assert!(ColorScheme::BlackWhite.get_color(&white_cell) == WHITE);
+        assert!(no_color(&black_cell) == BLACK);
+        assert!(no_color(&white_cell) == WHITE);
     }
 
     #[test]
     fn test_activation_color_scheme() {
-        let rule = Rule::new(0).unwrap();
         let new_state_off = Cell {
             state: true,
-            rule: rule,
             activation: Activation::NewStateOff,
             omega: 0.0,
-            big_omega: 1.0,
-            alpha: 0.0,
         };
         let all_on = Cell {
             state: true,
-            rule: rule,
             activation: Activation::AllOn,
             omega: 0.0,
-            big_omega: 1.0,
-            alpha: 0.0,
         };
         let left_on = Cell {
             state: true,
-            rule: rule,
             activation: Activation::LeftOn,
             omega: 0.0,
-            big_omega: 1.0,
-            alpha: 0.0,
         };
         let self_on = Cell {
             state: true,
-            rule: rule,
             activation: Activation::SelfOn,
             omega: 0.0,
-            big_omega: 1.0,
-            alpha: 0.0,
         };
         let all_off = Cell {
             state: true,
-            rule: rule,
             activation: Activation::AllOff,
             omega: 0.0,
-            big_omega: 1.0,
-            alpha: 0.0,
         };
 
-        assert!(ColorScheme::ActivationColor.get_color(&new_state_off) == WHITE);
-        assert!(ColorScheme::ActivationColor.get_color(&all_on) == BLACK);
-        assert!(ColorScheme::ActivationColor.get_color(&left_on) == GREEN);
-        assert!(ColorScheme::ActivationColor.get_color(&self_on) == RED);
-        assert!(ColorScheme::ActivationColor.get_color(&all_off) == BLUE);
+        assert!(activation_color(&new_state_off) == WHITE);
+        assert!(activation_color(&all_on) == BLACK);
+        assert!(activation_color(&left_on) == GREEN);
+        assert!(activation_color(&self_on) == RED);
+        assert!(activation_color(&all_off) == BLUE);
     }
 }

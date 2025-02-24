@@ -5,6 +5,7 @@ authors = ["Andrea Bonomi <andrea.bonomi@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.96"
 image = "0.23.14"
 rand_core = "0.9.0"
 

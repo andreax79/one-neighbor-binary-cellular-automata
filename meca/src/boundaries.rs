@@ -1,4 +1,5 @@
 use crate::cell::Cell;
+use anyhow::Result;
 use std::fmt;
 use std::str;
 
@@ -66,17 +67,17 @@ impl Boundaries {
 }
 
 impl str::FromStr for Boundaries {
-    type Err = &'static str;
+    type Err = anyhow::Error;
 
     /// Implement the FromStr trait for Boundaries to parse the boundary type
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
             "periodic" => Ok(Boundaries::Periodic),
             "fixedon" => Ok(Boundaries::Fixed(true)),
             "fixedoff" => Ok(Boundaries::Fixed(false)),
             "adiabatic" => Ok(Boundaries::Adiabatic),
             "reflective" => Ok(Boundaries::Reflective),
-            _ => Err("Invalid boundary type: must be 'Periodic', 'FixedOn', 'FixedOff', 'Adiabatic', or 'Reflective'"),
+            _ => Err(anyhow::anyhow!("Invalid boundary type: must be 'Periodic', 'FixedOn', 'FixedOff', 'Adiabatic', or 'Reflective'")),
         }
     }
 }
@@ -96,14 +97,12 @@ impl fmt::Display for Boundaries {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rule::Rule;
 
     fn test_cells() -> Vec<Cell> {
-        let rule = Rule { number: 0 };
         vec![
-            Cell::new(rule, 0.0, false),
-            Cell::new(rule, 0.0, true),
-            Cell::new(rule, 0.0, false),
+            Cell::new(0.0, false),
+            Cell::new(0.0, true),
+            Cell::new(0.0, false),
         ]
     }
 
