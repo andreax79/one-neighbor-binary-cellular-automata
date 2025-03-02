@@ -30,6 +30,7 @@ body {
     border: 0.1em solid #000;
     font-size: 0.8em;
     line-height: 1.2em;
+    width: 25em;
 }
 
 .window-titlebar {
@@ -47,6 +48,12 @@ body {
 
 .window-content {
     padding: 1em;
+}
+
+.window-error {
+    background-color: #bbb;
+    padding: 0.5em 1em;
+    width: auto;
 }
 
 .window label {
@@ -70,6 +77,10 @@ body {
 .window input {
     margin-bottom: 0.5em;
     width: 5em;
+}
+
+.window label.disabled {
+  color: #ccc;
 }
 
 .button-toggle {

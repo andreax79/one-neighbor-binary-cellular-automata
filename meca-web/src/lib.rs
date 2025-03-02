@@ -4,8 +4,6 @@ use anyhow;
 use meca::config::Configuration;
 use meca::row::Row;
 use meca::stats::Stats;
-use rand_core::SeedableRng;
-use rand_pcg::Lcg128Xsl64;
 use wasm_bindgen::prelude::*;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlCanvasElement;
@@ -77,11 +75,8 @@ fn draw_image(
 
 #[wasm_bindgen]
 pub fn draw(canvas: &HtmlCanvasElement, state: JsValue) -> Result<JsValue, JsValue> {
-    let vue_state: VueState = match serde_wasm_bindgen::from_value(state) {
-        Ok(state) => state,
-        Err(e) => return Err(JsValue::from(e)),
-    };
-    let mut rng = Lcg128Xsl64::seed_from_u64(vue_state.seed);
+    let vue_state = VueState::deserialize(state).map_err(anyhow_to_jsvalue)?;
+    let mut rng = vue_state.get_rng();
     let config = vue_state.get_config(&mut rng).map_err(anyhow_to_jsvalue)?;
     let color_scheme = vue_state.get_color_scheme().map_err(anyhow_to_jsvalue)?;
     let mut row = Row::new(config.prepare_initial_state(&mut rng));

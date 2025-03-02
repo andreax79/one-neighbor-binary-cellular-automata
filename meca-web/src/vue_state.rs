@@ -1,12 +1,16 @@
 use anyhow::Result;
 use meca::boundaries::Boundaries;
 use meca::color_scheme::ColorScheme;
+use meca::config::Configuration;
 use meca::config::StdConfiguration;
 use meca::initial_state::InitialState;
 use meca::rule::RuleType;
 use meca::update_pattern::UpdatePattern;
 use rand_core::RngCore;
+use rand_core::SeedableRng;
+use rand_pcg::Lcg128Xsl64;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct VueState {
@@ -20,7 +24,9 @@ pub struct VueState {
     pub initial_state: String,
     pub custom_initial_state: String,
     pub alpha: f64,
-    pub seed: u64,
+    pub seed: u64,             // random seed
+    pub set_random_seed: bool, // if true, use the hex_seed as random seed
+    pub seed_hex_str: String,  // random seed as hex
     pub color_scheme: String,
     pub cell_size: usize,
     pub rule_type_values: Vec<String>,
@@ -45,6 +51,8 @@ impl VueState {
             update_pattern: "Synchronous".to_string(),
             alpha: 0.0,
             seed: 0,
+            set_random_seed: false,
+            seed_hex_str: "".to_string(),
             color_scheme: "BlackWhite".to_string(),
             cell_size: 1,
             rule_type_values: RuleType::VALID_VALUES
@@ -108,7 +116,11 @@ impl VueState {
         update_pattern.parse::<UpdatePattern>()
     }
 
-    pub fn get_config(&self, rng: &mut dyn RngCore) -> Result<StdConfiguration> {
+    pub fn get_rng(&self) -> impl RngCore {
+        Lcg128Xsl64::seed_from_u64(self.seed)
+    }
+
+    pub fn get_config(&self, rng: &mut dyn RngCore) -> Result<impl Configuration> {
         Ok(StdConfiguration::new(
             self.get_rule_type()?.get_rule(self.rule)?,
             self.size,
@@ -120,5 +132,20 @@ impl VueState {
             self.steps,
             rng,
         ))
+    }
+
+    pub fn deserialize(state: JsValue) -> Result<Self> {
+        let mut vue_state: VueState = match serde_wasm_bindgen::from_value(state) {
+            Ok(state) => state,
+            Err(e) => anyhow::bail!("Error parsing configuration: {}", e),
+        };
+        if vue_state.set_random_seed {
+            // parse hex seed
+            vue_state.seed = match u64::from_str_radix(&vue_state.seed_hex_str, 16) {
+                Ok(value) => value,
+                Err(_) => anyhow::bail!("Error parsing hex value {}", vue_state.seed_hex_str),
+            }
+        }
+        Ok(vue_state)
     }
 }

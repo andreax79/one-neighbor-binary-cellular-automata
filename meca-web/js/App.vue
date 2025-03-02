@@ -5,6 +5,7 @@
             <button aria-label="Toggle" class="button-toggle" @click="toggle">&#9645;</button>
             <h1 class="title">Settings</h1>
         </div>
+        <div class="window-error" v-show="error" >{{ error }}</div>
         <div class="window-content" ref="content">
             <div>
                 <label for="rule">Rule</label>
@@ -38,7 +39,7 @@
                       {{ value }}
                     </option>
                 </select>
-                <label for="custom_initial_state" class="sub">pattern:</label>
+                <label :class="{'disabled' : initial_state != 'Custom'}" for="custom_initial_state" class="sub">pattern:</label>
                 <input :disabled="initial_state != 'Custom'" v-model="custom_initial_state" type="text" name="custom_initial_state" />
             </div>
             <div>
@@ -48,12 +49,21 @@
                       {{ value }}
                     </option>
                 </select>
-                <label for="update_pattern_number" class="sub">n:</label>
+                <label :class="{'disabled' : !update_pattern.endsWith('<n>')}" for="update_pattern_number" class="sub">n:</label>
                 <input :disabled="!update_pattern.endsWith('<n>')" v-model="update_pattern_number" type="number" name="update_pattern_number" />
             </div>
             <div>
                 <label for="alpha">Alpha</label>
                 <input v-model="alpha" type="number" name="alpha" value="0" step="0.001" min="0" max="1" />
+            </div>
+            <div>
+                <label for="set_random_seed">Random Seed</label>
+                <select v-model="set_random_seed" name="set_random_seed" :disabled="!useRandom">
+                    <option :value="true">Custom seed</option>
+                    <option :value="false">Timestamp</option>
+                </select>
+                <label :class="{'disabled' : !useRandom || !set_random_seed}" for="set_random_seed" class="sub">seed:</label>
+                <input :disabled="!useRandom || !set_random_seed" v-model="seed_hex_str" name="seed_hex_str" />
             </div>
             <div>
                 <label for="color_scheme">Color Scheme</label>
@@ -65,7 +75,7 @@
                 <label for="cell_size" class="sub">cell size:</label>
                 <input v-model="cell_size" type="number" name="cell_size" value="0" step="1" min="1" />
             </div>
-            <button @click="render" class="button-primary" id="render">render</button>
+            <button @click="run" class="button-primary" id="run">Run</button>
         </div>
     </div>
 </template>
@@ -80,21 +90,33 @@ export default defineComponent({
         'rule': Rule,
     },
     data() {
-        return get_initial_state();
+        let data = get_initial_state();
+        data.seed = new Date().getTime();
+        data.error = null;
+        return data;
+    },
+    computed: {
+        useRandom() {
+            return this.initial_state == 'Random' || this.update_pattern != 'Synchronous'
+        }
     },
     methods: {
-        render() {
+        run() {
             const canvas = this.$refs.canvas;
-            console.log('rendering');
             try {
+                this.seed = new Date().getTime();
+                if (!this.set_random_seed) {
+                    this.seed_hex_str = this.seed.toString(16);
+                }
+                this.error = null;
                 const stats = draw(canvas, this, 800, 600);
                 console.log(stats);
             } catch (ex) {
+                this.error = ex;
                 console.log(ex);
             }
         },
         toggle() {
-            console.log('toggling');
             const content = this.$refs.content;
             content.style.display = content.style.display == 'none' ? 'block' : 'none';
         },
@@ -123,7 +145,6 @@ export default defineComponent({
         }
     },
     mounted() {
-        console.log('mounted');
         this.$refs.titlebar.onmousedown = this.dragStart;
         const width = this.$refs.content.getBoundingClientRect().width.toFixed(0);
         this.$refs.titlebar.style['min-width'] = width + 'px';
