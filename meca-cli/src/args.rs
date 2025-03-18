@@ -1,4 +1,4 @@
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 use meca::boundaries::Boundaries;
 use meca::color_scheme::ColorScheme;
 use meca::initial_state::InitialState;
@@ -10,18 +10,20 @@ use std::fmt;
 use std::time::SystemTime;
 
 pub struct Args {
-    pub rule_number: u8,
-    pub rule_type: RuleType,
-    pub size: usize,
-    pub alpha: f64,
-    pub boundaries: Boundaries,
-    pub update_pattern: UpdatePattern,
-    pub initial_state: InitialState,
-    pub seed: u64,
-    pub steps: usize,
-    pub output_type: OutputType,
-    pub color_scheme: ColorScheme,
-    pub filename: String,
+    pub rule_number: u8,               // Rule number
+    pub rule_type: RuleType,           // Rule family (1nCA or ECA)
+    pub size: usize,                   // Grid width
+    pub alpha: f64,                    // Memory factor
+    pub boundaries: Boundaries,        // Boundary conditions
+    pub update_pattern: UpdatePattern, // Update pattern
+    pub initial_state: InitialState,   // Initial state
+    pub seed: u64,                     // Random seed
+    pub steps: usize,                  // Number of steps
+    pub output_type: OutputType,       // Output type
+    pub color_scheme: ColorScheme,     // Output color scheme
+    pub filename: String,              // Output filename
+    pub quiet: bool,                   // Quiet mode
+    pub is_random: bool,               // Has random elements
 }
 
 impl Args {
@@ -123,6 +125,13 @@ impl Args {
                     .default_value("TimeSpaceGraph")
                     .help(format!("Output type ({})", OutputType::valid_values())),
             )
+            .arg(
+                Arg::new("quiet")
+                    .short('q')
+                    .long("quiet")
+                    .action(ArgAction::SetTrue)
+                    .help("Quiet mode"),
+            )
             .get_matches();
         // Parse the arguments
         let rule_number = *matches.get_one::<u8>("rule").unwrap();
@@ -160,10 +169,12 @@ impl Args {
                 .unwrap()
                 .as_secs()
         });
+        let quiet = *matches.get_one::<bool>("quiet").unwrap_or(&false);
+        let is_random = initial_state.is_random() || update_pattern.is_random();
 
         // Generate the filename
         let filename = format!(
-            "rule_{}_w{}_s{}{}{}{}.png",
+            "rule_{}_w{}_s{}{}{}{}{}.png",
             rule_number,
             size,
             steps,
@@ -184,6 +195,12 @@ impl Args {
                 "".to_string()
             } else {
                 format!("_{}", update_pattern)
+            },
+            // Add the random seed to the filename
+            if is_random {
+                format!("_r{}", seed)
+            } else {
+                "".to_string()
             }
         );
 
@@ -195,11 +212,13 @@ impl Args {
             boundaries,
             update_pattern,
             initial_state,
+            seed,
             steps,
             output_type,
             color_scheme,
             filename,
-            seed,
+            quiet,
+            is_random,
         })
     }
 }
@@ -227,7 +246,11 @@ Output type: {output_type}
             size = self.size,
             boundaries = self.boundaries,
             initial_state = self.initial_state,
-            seed = self.seed,
+            seed = if self.is_random {
+                format!("{}", self.seed)
+            } else {
+                "-".to_string()
+            },
             steps = self.steps,
             update_pattern = self.update_pattern,
             color_scheme = self.color_scheme,

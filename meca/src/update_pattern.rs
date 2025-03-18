@@ -122,6 +122,17 @@ impl UpdatePattern {
             .map(|(i, cell)| cell.update(&row.cells, i, row.t, config))
             .collect()
     }
+
+    /// Check if the update pattern is random
+    pub fn is_random(&self) -> bool {
+        match self {
+            UpdatePattern::Synchronous => false,
+            UpdatePattern::RasRandomIndependent(_)
+            | UpdatePattern::RasRandomOrder
+            | UpdatePattern::OasCyclic
+            | UpdatePattern::OasEqClocked(_) => true,
+        }
+    }
 }
 
 impl FromStr for UpdatePattern {

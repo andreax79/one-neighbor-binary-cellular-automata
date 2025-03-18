@@ -11,7 +11,9 @@ pub mod args;
 fn run_app() -> Result<(), Box<dyn std::error::Error>> {
     // Parse the command line arguments
     let args = Args::parse()?;
-    eprint!("{}", &args);
+    if !args.quiet {
+        eprint!("{}", &args);
+    }
     let mut rng = Lcg128Xsl64::seed_from_u64(args.seed);
     let config = StdConfiguration::new(
         args.rule_type.get_rule(args.rule_number)?,
@@ -44,7 +46,9 @@ fn run_app() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     output.close()?;
-    eprintln!("{}", stats);
+    if !args.quiet {
+        eprintln!("{}", stats);
+    }
 
     Ok(())
 }

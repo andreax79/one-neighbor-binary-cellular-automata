@@ -79,6 +79,15 @@ impl InitialState {
         let state = self.parse_initial_state(size, rng);
         state.iter().map(|s| Cell::new(alpha, *s)).collect()
     }
+
+    /// Check if the initial state is random
+    pub fn is_random(&self) -> bool {
+        match self {
+            InitialState::None => true,
+            InitialState::String(s) => s.trim().to_uppercase() == "RANDOM",
+            InitialState::Bool(_) => false,
+        }
+    }
 }
 
 impl fmt::Display for InitialState {

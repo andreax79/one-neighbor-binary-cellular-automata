@@ -44,10 +44,19 @@ fn omega_color(cell: &Cell, big_omega: f64) -> Rgb<u8> {
 fn activation_color(cell: &Cell) -> Rgb<u8> {
     match cell.activation {
         Activation::NewStateOff => WHITE,
-        Activation::SelfRightOn | Activation::SelfLeftOn | Activation::AllOn => BLACK,
-        Activation::LeftOn | Activation::RightOn | Activation::LeftRightOn => GREEN,
-        Activation::SelfOn => RED,
-        Activation::AllOff => BLUE,
+        //     Activation::SelfRightOn | Activation::SelfLeftOn | Activation::AllOn => BLACK,
+        //     Activation::LeftOn | Activation::RightOn | Activation::LeftRightOn => GREEN,
+        //     Activation::SelfOn => RED,
+        //     Activation::AllOff => BLUE,
+        // AllOff,      // 000
+        Activation::AllOff => Rgb([127, 127, 127]), // 000
+        Activation::RightOn => Rgb([127, 127, 0]),  // 001
+        Activation::SelfOn => Rgb([127, 0, 127]),   // 010
+        Activation::SelfRightOn => Rgb([127, 0, 0]), // 011
+        Activation::LeftOn => Rgb([0, 127, 127]),   // 100
+        Activation::LeftRightOn => Rgb([0, 127, 0]), // 101
+        Activation::SelfLeftOn => Rgb([0, 0, 127]), // 110
+        Activation::AllOn => Rgb([0, 0, 0]),        // 111
     }
 }
 
