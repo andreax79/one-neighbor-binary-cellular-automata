@@ -7,7 +7,6 @@ use meca::rule::RuleType;
 use meca::update_pattern::UpdatePattern;
 use std::error::Error;
 use std::fmt;
-use std::time::SystemTime;
 
 pub struct Args {
     pub rule_number: u8,               // Rule number
@@ -163,14 +162,15 @@ impl Args {
             .get_one::<String>("output_type")
             .unwrap()
             .parse::<OutputType>()?;
+        let is_random = initial_state.is_random() || update_pattern.is_random();
         let seed = matches.get_one::<u64>("seed").cloned().unwrap_or_else(|| {
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
+            if is_random {
+                getrandom::u64().unwrap()
+            } else {
+                0
+            }
         });
         let quiet = *matches.get_one::<bool>("quiet").unwrap_or(&false);
-        let is_random = initial_state.is_random() || update_pattern.is_random();
 
         // Generate the filename
         let filename = format!(
