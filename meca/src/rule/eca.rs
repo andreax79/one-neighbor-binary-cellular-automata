@@ -38,6 +38,6 @@ impl ECARule {
 impl fmt::Display for ECARule {
     /// Implement the Display trait
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.number)
+        write!(f, "ECA {}", self.number)
     }
 }

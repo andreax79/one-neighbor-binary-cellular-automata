@@ -2,6 +2,7 @@ use crate::color_scheme::ColorScheme;
 use crate::config::Configuration;
 use crate::output::console::ConsoleOutput;
 use crate::output::image::{ImageOutput, DEFAULT_CELL_SIZE};
+use crate::output::json::JSONOutput;
 use crate::output::no_output::NoOutput;
 use crate::row::Row;
 use anyhow::Result;
@@ -10,6 +11,7 @@ use std::str;
 
 pub mod console;
 pub mod image;
+pub mod json;
 pub mod no_output;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -17,30 +19,39 @@ pub enum OutputType {
     NoOutput,
     Console,
     CSV,
-    TimeSpace(usize),
-    TimeSpaceGraph(usize),
+    JSON,
+    TimeSpace(usize),      // (Cell size)
+    TimeSpaceGraph(usize), // (Cell size)
 }
 
 impl OutputType {
-    pub const VALID_VALUES: [&'static str; 5] =
-        ["TimeSpaceGraph", "TimeSpace", "Console", "CSV", "None"];
+    pub const VALID_VALUES: [&'static str; 6] = [
+        "TimeSpaceGraph",
+        "TimeSpace",
+        "Console",
+        "CSV",
+        "JSON",
+        "None",
+    ];
 
     /// Returns a comma-separated list of valid update pattern names
     pub fn valid_values() -> String {
         Self::VALID_VALUES.join(", ")
     }
 
-    pub fn open_output(
+    pub fn open_output<'a>(
         &self,
+        config: &'a dyn Configuration,
         filename: &str,
-        size: usize,
-        steps: usize,
         color_scheme: ColorScheme,
-    ) -> Box<dyn Output> {
+    ) -> Box<dyn Output + 'a> {
         match self {
             OutputType::NoOutput => Box::new(NoOutput::new()),
             OutputType::Console | OutputType::CSV => Box::new(ConsoleOutput::new(*self)),
-            _ => Box::new(ImageOutput::new(filename, size, steps, color_scheme, *self)),
+            OutputType::JSON => Box::new(JSONOutput::new(config)),
+            OutputType::TimeSpace(_) | OutputType::TimeSpaceGraph(_) => {
+                Box::new(ImageOutput::new(config, filename, color_scheme, *self))
+            }
         }
     }
 }
@@ -62,6 +73,7 @@ impl str::FromStr for OutputType {
             "none" => Ok(OutputType::NoOutput),
             "console" => Ok(OutputType::Console),
             "csv" => Ok(OutputType::CSV),
+            "json" => Ok(OutputType::JSON),
             "timespace" => Ok(OutputType::TimeSpace(cell_size)),
             "timespacegraph" => Ok(OutputType::TimeSpaceGraph(cell_size)),
             _ => Err(anyhow::anyhow!("Invalid output option: must be 'TimeSpaceGraph', 'TimeSpace', 'Console', or 'None'")),
@@ -76,6 +88,7 @@ impl fmt::Display for OutputType {
             OutputType::NoOutput => write!(f, "None"),
             OutputType::Console => write!(f, "Console"),
             OutputType::CSV => write!(f, "CSV"),
+            OutputType::JSON => write!(f, "JSON"),
             OutputType::TimeSpace(cell_size) => {
                 if *cell_size == DEFAULT_CELL_SIZE {
                     write!(f, "TimeSpace")
@@ -95,7 +108,7 @@ impl fmt::Display for OutputType {
 }
 
 pub trait Output {
-    fn add_row(&mut self, row: &Row, config: &dyn Configuration);
+    fn add_row(&mut self, row: &Row);
     fn close(&mut self) -> Result<()>;
 }
 
@@ -114,6 +127,7 @@ mod tests {
             Ok(OutputType::Console)
         ));
         assert!(matches!("CSV".parse::<OutputType>(), Ok(OutputType::CSV)));
+        assert!(matches!("JSON".parse::<OutputType>(), Ok(OutputType::JSON)));
         assert!(matches!(
             "timespace".parse::<OutputType>(),
             Ok(OutputType::TimeSpace(DEFAULT_CELL_SIZE))
@@ -144,6 +158,7 @@ mod tests {
         assert!(OutputType::NoOutput.to_string() == "None");
         assert!(OutputType::Console.to_string() == "Console");
         assert!(OutputType::CSV.to_string() == "CSV");
+        assert!(OutputType::JSON.to_string() == "JSON");
         assert!(OutputType::TimeSpace(DEFAULT_CELL_SIZE).to_string() == "TimeSpace");
         assert!(OutputType::TimeSpace(10).to_string() == "TimeSpace10");
         assert!(OutputType::TimeSpaceGraph(DEFAULT_CELL_SIZE).to_string() == "TimeSpaceGraph");

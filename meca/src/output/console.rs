@@ -1,4 +1,3 @@
-use crate::config::Configuration;
 use crate::output::Output;
 use crate::output::OutputType;
 use crate::row::Row;
@@ -40,7 +39,7 @@ impl ConsoleOutput {
 
 impl Output for ConsoleOutput {
     /// Print the row to the console
-    fn add_row(&mut self, row: &Row, _config: &dyn Configuration) {
+    fn add_row(&mut self, row: &Row) {
         println!("{}", (self.format_fun)(row));
     }
 

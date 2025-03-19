@@ -88,6 +88,6 @@ impl OnCARule {
 impl fmt::Display for OnCARule {
     /// Implement the Display trait
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.number)
+        write!(f, "1nCA {}", self.number)
     }
 }

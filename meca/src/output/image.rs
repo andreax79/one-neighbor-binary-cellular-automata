@@ -11,7 +11,7 @@ use std::string::String;
 pub const DEFAULT_CELL_SIZE: usize = 2;
 
 // Output the rows to an image
-pub struct ImageOutput {
+pub struct ImageOutput<'a> {
     color_scheme: ColorScheme,
     cell_size: usize,
     filename: String,
@@ -21,28 +21,30 @@ pub struct ImageOutput {
     prev_ones: usize,
     prev_ones_delta: usize,
     output_type: OutputType,
+    config: &'a dyn Configuration,
 }
 
-impl ImageOutput {
-    pub fn new(
+impl ImageOutput<'_> {
+    pub fn new<'a>(
+        config: &'a dyn Configuration,
         filename: &str,
-        size: usize,
-        steps: usize,
         color_scheme: ColorScheme,
         output_type: OutputType,
-    ) -> ImageOutput {
+    ) -> ImageOutput<'a> {
         let cell_size = match output_type {
             OutputType::TimeSpaceGraph(cell_size) => cell_size,
             OutputType::TimeSpace(cell_size) => cell_size,
             _ => DEFAULT_CELL_SIZE,
         };
         // Calculate the width and height of the image
+        let size = config.get_size();
         let width = if let OutputType::TimeSpaceGraph(_) = output_type {
             // Add space for the graphs
             ((cell_size * (size + 1)) as f64 * 1.25) as u32
         } else {
             (cell_size * (size + 1)) as u32
         };
+        let steps = config.get_steps();
         let height = (cell_size * (steps)) as u32;
         ImageOutput {
             color_scheme: color_scheme,
@@ -54,6 +56,7 @@ impl ImageOutput {
             prev_ones: 0,
             prev_ones_delta: 0,
             output_type: output_type,
+            config: config,
         }
     }
 
@@ -87,11 +90,11 @@ impl ImageOutput {
     }
 }
 
-impl Output for ImageOutput {
+impl Output for ImageOutput<'_> {
     /// Draw the row on the image
-    fn add_row(&mut self, row: &Row, config: &dyn Configuration) {
+    fn add_row(&mut self, row: &Row) {
         row.cells.iter().enumerate().for_each(|(j, cell)| {
-            let color = self.color_scheme.get_color(&cell, j, config);
+            let color = self.color_scheme.get_color(&cell, j, self.config);
             for dx in 0..self.cell_size {
                 for dy in 0..self.cell_size {
                     self.img.put_pixel(
@@ -103,7 +106,7 @@ impl Output for ImageOutput {
             }
         });
         if let OutputType::TimeSpaceGraph(_) = self.output_type {
-            let value: f64 = row.get_value(config);
+            let value: f64 = row.get_value(self.config);
             let delta: f64 = (value - self.prev_value).abs();
             let ones: usize = row.get_ones();
             let ones_delta: usize = (ones as isize - self.prev_ones as isize).abs() as usize;

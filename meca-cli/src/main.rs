@@ -27,9 +27,9 @@ fn run_app() -> Result<(), Box<dyn std::error::Error>> {
         &mut rng,
     );
 
-    let mut output =
-        args.output_type
-            .open_output(&args.filename, args.size, args.steps, args.color_scheme);
+    let mut output = args
+        .output_type
+        .open_output(&config, &args.filename, args.color_scheme);
     let mut stats = Stats::new();
     let mut row = Row::new(config.prepare_initial_state(&mut rng));
 
@@ -38,7 +38,7 @@ fn run_app() -> Result<(), Box<dyn std::error::Error>> {
         stats.update(row.density());
 
         // Draw the row
-        output.add_row(&row, &config);
+        output.add_row(&row);
 
         // Update the row
         let new_row = row.step(&mut rng, &config);
